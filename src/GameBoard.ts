@@ -10,7 +10,14 @@ import {
 export const boardDimension: number = 4;
 const nTilesToFillAtStart: number = 2;
 
+export enum Result {
+    FAILURE,
+    SUCCESS,
+    ONGOING
+}
+
 export enum Direction {
+    NONE,
     UP,
     DOWN,
     RIGHT,
@@ -37,20 +44,34 @@ export class GameBoard {
         }
     }
 
+    // i need to add logic for generating random values not just using 2 sa a value
     #getRandomEmptyTileIndex(): number {
         const availableIndices: Array<number> = this.#boardState
-            .map((tile,index) => tile === null ? index : null)
+            .map((tile,index) => tile === 0 ? index : null)
             .filter(tileIndex => tileIndex !== null);
+
+        if(availableIndices.length === 0) {
+            return -1;
+        }
 
         const x: number = Math.floor(Math.random() * availableIndices.length);
         return x;
     }
 
-    getBoardState(): Array<number> {
-        return this.#boardState;
+    getBoardState(): string {
+        let board = [];
+        for(let i = 0; i < boardDimension*boardDimension; i=i+boardDimension){
+            let arr = this.#boardState.slice(i, i+boardDimension);
+            board.push(arr.join(" "));
+        }
+        return board.join('\n');
     }
 
-    calculateNextState(direction: Direction) {
+    hasWon(): boolean {
+        return this.#boardState.some(value => value === 2048);
+    }
+
+    calculateNextState(direction: Direction): Result {
         switch(direction) {
             case Direction.LEFT: {
                 const arrays = getRowsLeft(this.#boardState, boardDimension);
@@ -74,13 +95,25 @@ export class GameBoard {
             case Direction.DOWN: {
                 const arrays = getColumnsDown(this.#boardState, boardDimension);
                 const calculatedArrays = arrays.map(arr => this.resolveArray(arr));
-                //this.updateBoardFromArraysDown(calculatedArrays);
                 this.#boardState = getMatrixFromColumnsDown(calculatedArrays, boardDimension);
                 break;
             }
             default:
                 break;
         }
+
+
+        if(this.hasWon()) {
+            return Result.SUCCESS;
+        }
+        // add another number
+        const x = this.#getRandomEmptyTileIndex();
+        if(x === -1) {
+            // GAME OVER
+            return Result.FAILURE;
+        }
+        this.#boardState[x] = 2;
+        return Result.ONGOING;
     }
 
     updateBoardFromArraysLeft(arrays: Array<Array<number>>): void {
@@ -100,17 +133,14 @@ export class GameBoard {
         let newArrIndex: number = 0;
 
         for(let inputArrIndex = 0; inputArrIndex < boardDimension; inputArrIndex++) {
-            console.log(`inputArrIndex: ${inputArrIndex}`);
             if(arr[inputArrIndex] === 0) {
-                console.log(`inputArrIndex = ${inputArrIndex}; it's 0, skipping.`);
+                // do nothing
             }
             else if((inputArrIndex < boardDimension - 1) && (arr[inputArrIndex] === arr[inputArrIndex+1])){
-                console.log(`inputArrIndex = ${inputArrIndex}; adding.`);
                 newArr[newArrIndex] = arr[inputArrIndex]*2;
                 newArrIndex++;
                 inputArrIndex++;
             } else {
-                console.log(`inputArrIndex = ${inputArrIndex}; leaving as is.`);
                 newArr[newArrIndex] = arr[inputArrIndex];
                 newArrIndex++;
             }
