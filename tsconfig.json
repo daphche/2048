@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
 	"rootDir": "src",
     "outDir": "src/ts-compiled",
 	"moduleResolution": "node",
